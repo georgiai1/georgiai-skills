@@ -4,13 +4,17 @@ Claude Code plugin marketplace with the skills and commands we use at [Cost Effe
 
 ## Install
 
-In Claude Code, add the marketplace once:
+One command in your terminal:
+
+```bash
+claude plugin marketplace add georgiai1/costeffective-skills && claude plugin install feedback-workflow@costeffective-skills
+```
+
+Or from inside Claude Code:
 
 ```
 /plugin marketplace add georgiai1/costeffective-skills
 ```
-
-Then install plugins from it:
 
 ```
 /plugin install feedback-workflow@costeffective-skills
