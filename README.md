@@ -7,7 +7,7 @@ Claude Code plugin marketplace with the skills and commands we use at [Cost Effe
 One command in your terminal (installs everything):
 
 ```bash
-claude plugin marketplace add georgiai1/costeffective-skills && claude plugin install feedback-workflow@costeffective-skills && claude plugin install brd-architect@costeffective-skills && claude plugin install nuxt@costeffective-skills
+claude plugin marketplace add georgiai1/costeffective-skills && claude plugin install feedback-workflow@costeffective-skills && claude plugin install brd-architect@costeffective-skills && claude plugin install nuxt@costeffective-skills && claude plugin install fix-stale-mcp-oauth@costeffective-skills
 ```
 
 Then enable auto-update so new versions arrive on their own: `/plugin` → **Marketplaces** → `costeffective-skills` → **Enable auto-update**.
@@ -42,6 +42,10 @@ One-Shot BRD Architect skill: interviews a business owner about how their busine
 ### nuxt
 
 Nuxt 4+ development skill with reference docs (server routes, file-based routing, middleware, composables, config). Vendored snapshot of the MIT-licensed community `nuxt` agent skill, pinned here so the whole team runs the same version; refresh it by re-copying from upstream and bumping the version.
+
+### fix-stale-mcp-oauth
+
+Repairs MCP OAuth logins that fail on every attempt with `Unrecognized client_id` / `invalid_client` (the `/mcp` → Authenticate loop). Root cause: a stale cached Dynamic Client Registration in `~/.claude/.credentials.json` that the auth server no longer recognizes — the UI can't clear it and reinstalling the server doesn't help. The skill removes just that one cache entry (metadata-only inspection, backup, atomic write), then walks through the full-restart re-authentication.
 
 ## Contributing / updating
 
