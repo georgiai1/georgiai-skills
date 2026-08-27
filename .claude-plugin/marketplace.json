@@ -17,6 +17,24 @@
       "author": {
         "name": "Cost Effective Software"
       }
+    },
+    {
+      "name": "brd-architect",
+      "source": "./plugins/brd-architect",
+      "description": "One-Shot BRD Architect skill: interview a business owner and produce a build-ready BRD a coding agent can implement in one shot — no follow-up questions, no invented decisions, no gaps.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Cost Effective Software"
+      }
+    },
+    {
+      "name": "nuxt",
+      "source": "./plugins/nuxt",
+      "description": "Nuxt 4+ development skill with reference docs (server routes, routing, middleware, composables, config). Vendored MIT-licensed community skill, pinned so the whole team runs the same version.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Cost Effective Software"
+      }
     }
   ]
 }
