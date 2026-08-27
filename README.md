@@ -22,6 +22,43 @@ Or from inside Claude Code:
 /plugin install georgiai@georgiai
 ```
 
+## Setup via Claude
+
+Prefer to let Claude do it? Paste this prompt into Claude Code — it handles fresh installs and migration from the old `costeffective-skills` marketplace:
+
+```text
+Set up the GeorgiAI Claude Code plugin for me:
+
+1. Migration check: if "claude plugin marketplace list" shows the old
+   "costeffective-skills" marketplace, first uninstall any of these plugins
+   that are installed — feedback-workflow@costeffective-skills,
+   brd-architect@costeffective-skills, nuxt@costeffective-skills,
+   fix-stale-mcp-oauth@costeffective-skills — then run:
+   claude plugin marketplace remove costeffective-skills
+
+2. Run: claude plugin marketplace add georgiai1/georgiai-skills
+   (skip if already added)
+
+3. Run: claude plugin install georgiai@georgiai
+   This one plugin contains everything: /feedback-prep, /feedback-round,
+   and the brd-architect, nuxt, and fix-stale-mcp-oauth skills.
+
+4. Enable auto-update: in ~/.claude/settings.json, set "autoUpdate": true
+   on the "georgiai" entry under "extraKnownMarketplaces" (edit the JSON
+   carefully, preserve everything else). New skills ship as version bumps
+   of this single plugin, so auto-update delivers them — no future
+   installs needed.
+
+5. If I have a global skill in ~/.claude/skills that duplicates anything
+   in this plugin (e.g. feedback-round, nuxt, brd-architect), list it and
+   ask me before removing it.
+
+6. Verify: "claude plugin list" shows georgiai@georgiai enabled, then
+   summarize what changed and remind me to restart Claude Code.
+
+Do not modify anything else in my settings.
+```
+
 ## What's inside
 
 ### Commands — feedback workflow
