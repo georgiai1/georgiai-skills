@@ -1,0 +1,9 @@
+{
+  "name": "feedback-workflow",
+  "description": "Customer feedback rounds end-to-end: /feedback-prep posts clarifying questions on ClickUp feedback tickets before implementation; /feedback-round consolidates tickets, implements them via parallel subagents, and syncs ClickUp, the database, and the BRD. Requires a per-project config section in the project's CLAUDE.md.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Cost Effective Software",
+    "email": "georgi@costeffective.software"
+  }
+}

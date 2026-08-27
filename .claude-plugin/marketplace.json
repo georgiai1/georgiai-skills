@@ -1,0 +1,22 @@
+{
+  "name": "costeffective-skills",
+  "owner": {
+    "name": "Cost Effective Software",
+    "email": "georgi@costeffective.software"
+  },
+  "metadata": {
+    "description": "Claude Code skills and commands used at Cost Effective Software",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "feedback-workflow",
+      "source": "./plugins/feedback-workflow",
+      "description": "Customer feedback rounds end-to-end: /feedback-prep asks clarifying questions on ClickUp tickets before work starts; /feedback-round consolidates, implements via parallel subagents, and syncs ClickUp/DB/BRD.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Cost Effective Software"
+      }
+    }
+  ]
+}
