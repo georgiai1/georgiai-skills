@@ -1,9 +1,0 @@
-{
-  "name": "nuxt",
-  "description": "Nuxt 4+ development skill — server routes, file-based routing, middleware patterns, Nuxt-specific composables, and configuration references. Vendored snapshot of the MIT-licensed community 'nuxt' agent skill so the whole team stays on the same version.",
-  "version": "0.1.0",
-  "author": {
-    "name": "Cost Effective Software",
-    "email": "georgi@costeffective.software"
-  }
-}

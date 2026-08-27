@@ -1,9 +1,0 @@
-{
-  "name": "fix-stale-mcp-oauth",
-  "description": "Repairs MCP OAuth logins that fail on every attempt with 'Unrecognized client_id' / invalid_client — surgically removes the stale Dynamic Client Registration entry from ~/.claude/.credentials.json (metadata-only inspection, single-key delete with backup, full-restart re-auth) without touching other servers' credentials.",
-  "version": "0.1.0",
-  "author": {
-    "name": "Cost Effective Software",
-    "email": "georgi@costeffective.software"
-  }
-}

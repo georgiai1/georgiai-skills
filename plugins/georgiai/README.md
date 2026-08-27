@@ -1,4 +1,4 @@
-# feedback-workflow
+# georgiai plugin — feedback workflow setup
 
 Customer feedback rounds end-to-end, driven from ClickUp. Two commands:
 

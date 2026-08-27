@@ -1,9 +1,0 @@
-{
-  "name": "brd-architect",
-  "description": "One-Shot BRD Architect — interviews a business owner about how their business actually runs and produces a single, build-ready Business Requirements Document complete enough for a coding agent to build the whole system in one shot: no follow-up questions, no invented decisions, no gaps.",
-  "version": "0.1.0",
-  "author": {
-    "name": "Cost Effective Software",
-    "email": "georgi@costeffective.software"
-  }
-}
