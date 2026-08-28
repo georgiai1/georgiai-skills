@@ -36,8 +36,9 @@ If the config section is missing or any **required** key is absent: **STOP immed
 - Fetch the configured ClickUp list and collect **every standalone ticket** in **to do** — exclude round parents (🗂️/consolidated naming) and subtasks of them (check `parent`). Classify each collected ticket:
   - **Synced** — its ID appears in `feedback_table.ticket_id_column` (filed through the app; authoritative regardless of name — use `ticket_naming` only as a secondary hint).
   - **Direct** — no `feedback_table` row: created straight in ClickUp by the owner or team. These are fully in scope — they are usually the vaguest and benefit most from this pass. Everything below applies to them; only the DB-row reads and expectations don't.
-- Also include tickets in **update required**: if their posted questions are still unanswered, only check whether NEW questions have appeared (don't re-ask); if answered, verify the answers actually close the ambiguity — leftover or follow-up questions get asked now, so the ticket doesn't bounce again mid-round.
-- For each ticket read ALL of: full markdown, **ClickUp comments** (`clickup_get_task_comments` / REST `GET /task/{id}/comment`), the `feedback_table` row (synced tickets), and every screenshot (incl. ones attached in comments). Comments are part of the spec — answers may already be there.
+- Also include tickets in **update required**: if their posted questions are still unanswered, only check whether NEW questions have appeared (don't re-ask) and note how long they've been waiting (shown in §5); if answered, verify the answers actually close the ambiguity — leftover or follow-up questions get asked now, so the ticket doesn't bounce again mid-round.
+- Standalone tickets stuck in **in progress** (usually leftovers of an interrupted round) get no comment — but run §2's progress check on them and list them in §5 with their real code state, so nothing silently rots.
+- For each ticket read ALL of: full markdown, **ClickUp comments AND their threaded replies** (`clickup_get_task_comments` + `clickup_get_threaded_comments` / REST `GET /task/{id}/comment` + `GET /comment/{comment_id}/reply` — the plain task-comment endpoint does NOT return thread replies, and answers are expected exactly there), the `feedback_table` row (synced tickets), and every screenshot (incl. ones attached in comments or replies). Comments are part of the spec — answers may already be there.
 - If the ClickUp MCP connector is rate-limited, go straight to the REST API using the token from `clickup_token_source`.
 
 ## 2. Context & progress
@@ -52,7 +53,7 @@ If the config section is missing or any **required** key is absent: **STOP immed
 
 ## 3. Generate questions & assumptions
 
-- Ask a **blocking question** only for genuine ambiguity or owner decisions: conflicting requirements (including **conflicts between two open tickets**), missing business rules, multiple plausible UX interpretations, data whose meaning only the owner knows, a ticket that **appears already implemented** (ask to confirm & close instead of silently re-doing it), or one **partially implemented** where the remaining scope is unclear.
+- Ask a **blocking question** only for genuine ambiguity or owner decisions: conflicting requirements (including **conflicts between two open tickets**), **duplicate/overlapping tickets** (propose which one survives and what merges into it), missing business rules, multiple plausible UX interpretations, data whose meaning only the owner knows, a ticket that **appears already implemented** (ask to confirm & close instead of silently re-doing it), or one **partially implemented** where the remaining scope is unclear.
 - Do NOT ask: anything answerable from code/DB/BRD/screenshots/comments; pure implementation choices; confirmation of the obvious.
 - **Every question is grounded:** one short line on what the app does today and/or what the BRD says, then numbered questions with concrete lettered options, the recommended default marked, **and the assumption behind that recommendation in one sentence** — so a one-word reply (or a single "давай по препоръките" equivalent in `client_language`) is a full answer.
 - **Assumptions instead of questions:** when the ambiguity has one clearly best reading (from BRD + code + the other tickets), don't block the ticket — state it as an assumption ("we'll do X unless you object", in `client_language`) in the same comment's assumptions list.
@@ -67,5 +68,6 @@ If the config section is missing or any **required** key is absent: **STOP immed
 
 ## 5. Summary (chat only)
 
-- Report a table, one row per ticket: link · type (synced/direct) · progress state (not started / partial / appears done) · outcome (ready / ready on stated assumptions / questions posted / confirm-close asked) · the questions asked.
+- Report a table, one row per ticket: link · type (synced/direct) · progress state (not started / partial / appears done) · size estimate (S/M/L from the code investigation) · outcome (ready / ready on stated assumptions / questions posted / confirm-close asked) · the questions asked.
+- Below the table: unanswered **update required** tickets with how long they've been waiting, and stuck **in progress** tickets with their real code state. Close with a suggested round scope — which ready tickets make a coherent next round.
 - Remind the handoff: once questions are answered in the comments, `/feedback-round` picks those tickets up automatically via its **update required** sweep; unanswered tickets stay out of the round. Direct tickets flow into the round exactly like synced ones.
