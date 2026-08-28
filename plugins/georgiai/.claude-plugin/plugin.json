@@ -1,7 +1,7 @@
 {
   "name": "georgiai",
   "description": "GeorgiAI toolkit — everything in one plugin: /feedback-prep and /feedback-round (ClickUp-driven customer feedback rounds), the One-Shot BRD Architect skill, the Nuxt 4+ development skill, and the fix-stale-mcp-oauth repair skill.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "GeorgiAI",
     "email": "georgi@costeffective.software"

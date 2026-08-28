@@ -21,7 +21,7 @@ If the config section is missing or any **required** key is absent: **STOP immed
 
 ## 1. Collect & consolidate
 
-- Fetch the configured ClickUp list and find all **standalone** feedback tickets in **to do** (exclude subtasks of previous round parents — check `parent`). The authoritative match is `feedback_table.ticket_id_column`: a standalone to-do task whose ID appears there is a feedback ticket, regardless of its name; use `ticket_naming` only as a secondary hint.
+- Fetch the configured ClickUp list and find all **standalone** feedback tickets in **to do** (exclude subtasks of previous round parents — check `parent`). The authoritative match is `feedback_table.ticket_id_column`: a standalone to-do task whose ID appears there is a feedback ticket, regardless of its name; use `ticket_naming` only as a secondary hint. Standalone to-do tickets with NO `feedback_table` row (created directly in ClickUp by the owner/team) are in scope too — consolidate them like any other; they simply have no DB row to read or sync.
 - Read each ticket's full markdown, its **ClickUp comments** (`clickup_get_task_comments` / REST `GET /task/{id}/comment`), AND its `feedback_table` row (the original title sometimes differs from the edited ClickUp name — all three carry intent). Comments often hold context, answers and Q&A added after filing — treat them as part of the ticket's requirements. Download and look at every screenshot (incl. ones attached in comments).
 - Also sweep tickets in **update required**: if the owner has answered the posted questions via comments, the ticket re-enters this round's scope (consolidate it like any other; the comment thread is the spec).
 - Create one parent ticket `🗂️ <"Customer feedback" in client_language> №N — DD.MM.YYYY (<"consolidated ticket" in client_language>)` (priority high, status in progress) listing the scope. Then **convert** each original feedback ticket into a subtask of it **in place** — REST `PUT /api/v2/task/{id}` with body `{"parent":"<parentId>"}` (promoting a top-level task to a subtask returns HTTP 200 and sticks). **Do NOT recreate + delete.** Conversion keeps the task's ID, description, screenshot URLs, comments/Q&A and history intact, so there is nothing to copy over and nothing dies with a deleted task. The MCP tools can't do this (`clickup_update_task` has no `parent` field; `clickup_move_task` only changes lists) — use the REST API.
@@ -49,7 +49,7 @@ If the config section is missing or any **required** key is absent: **STOP immed
 Run this as the **last move of each package's §3 loop**, immediately after that package is committed & pushed. Do NOT collect the updates and apply them together at the end — each subtask flips the moment its own work ships:
 
 - ClickUp: that subtask's status → **complete** + an implementation comment in `client_language` (what/why/commit; call out anything the owner should review).
-- DB: `feedback_table.status` → `fixed`; anything not shipped stays/returns to `open`.
+- DB: `feedback_table.status` → `fixed` (synced tickets only — a direct ticket has no row); anything not shipped stays/returns to `open`.
 
 ## 5. Wrap up
 
