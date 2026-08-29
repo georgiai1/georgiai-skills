@@ -1,63 +1,69 @@
 ---
-description: Run a customer feedback round end-to-end — consolidate ClickUp tickets, implement via parallel subagents, sync ClickUp/DB/BRD, deploy
+description: Run a customer feedback round end-to-end — consolidate ClickUp tickets, implement via parallel subagents, sync ClickUp/Supabase/BRD, deploy
 argument-hint: <round-number> [optional notes, e.g. "only the stock tickets"]
 ---
 
-Run a full customer feedback round for this project, autonomously.
+Run a full customer feedback round for the current project, autonomously.
 
-**Round number: $1** — the first argument is an integer N; it names everything in this round: the parent ticket ("… №N …"), the BRD change-log headers ("… №N)"), the docs/status.md + docs/tasks.md sections ("round N"), and the conversation — set the session title to `Feedback N` (exactly that: the word "Feedback" + the number, no "round") at the start. If $1 is missing or not an integer, infer N (highest existing consolidated-round parent number in the list + 1), state the inferred number, and continue.
+## 0. Resolve project
+
+- **Sync with the repo first, before anything else** (rounds run from more than one machine — local main may be behind): `git fetch`, then `git status` + `git log HEAD..origin/main --oneline`. If behind, `git pull --ff-only`. If the pull can't fast-forward, or there are local uncommitted/unpushed changes you didn't create this session, STOP and surface them to the user before touching anything — never rebase, merge, or stash someone else's work silently.
+- Read `.claude/feedback-round.json` from the root of the repo this skill is invoked in:
+
+```json
+{
+  "clickup_list_id": "901524746867",
+  "project_name": "Lina Trade",
+  "language": "bg",
+  "supabase": { "project_ref": "hmimpcypnrifvsgnxenb", "bug_reports_table": "bug_reports" },
+  "brd_doc_id": "2kyqtm8b-2995"
+}
+```
+
+- `clickup_list_id` and `project_name` are required. `language` defaults to `en` — it governs all customer-facing text (ClickUp comments, parent summary, BRD headers). `supabase` and `brd_doc_id` are optional — skip any step below that uses a field the config doesn't have.
+- If the file is missing: derive the project name (git remote → package.json name → folder name), fetch the ClickUp "Projects" space hierarchy (space id `90159111101` — one list per project; list names carry emoji prefixes, strip them before matching), fuzzy-match, **confirm the match with the user once**, then write `.claude/feedback-round.json` so future runs are deterministic. Never pick a list silently.
+
+**Round number: $1** — an integer N naming everything in this round: the parent ticket (`Feedback N — DD.MM.YYYY`), the BRD change-log headers, the docs/status.md + docs/tasks.md sections ("round N"), and the conversation — set the session title to `Feedback N` (exactly that; via mcp session set_session_title) at the start. If $1 is missing or not an integer, infer N = highest existing round parent in the list + 1 — match both the `Feedback N` pattern and the legacy „Клиентска обратна връзка №N" parents — state the inferred number, and continue.
 
 Full invocation arguments: `$ARGUMENTS` — the first token is the round number handled above; everything after it is free-form notes scoping this run (e.g. "only the stock tickets").
 
-## 0. Project config — HARD GATE
-
-Read the `## Feedback workflow` section of the `CLAUDE.md` **at this project's root** (or `.claude/feedback-workflow.md` in this project, if it exists). Global/user-level CLAUDE.md files and command arguments do NOT satisfy this gate — config from another project would point the run at the wrong client's list. It must define:
-
-**Required:** `clickup_list` (list ID + name) · `feedback_table` (DB table holding filed feedback) · `ticket_id_column` (column linking a row to its ClickUp task) · `client_language` (language for all client-facing ticket text and comments) · `ai_assignee` (ClickUp member name + ID) · `verify_commands` (scoped test / typecheck / lint commands)
-
-**Optional:** `brd_location` (where the BRD/spec lives) · `statuses` (defaults: `to do` / `update required` / `in progress` / `complete`) · `question_marker` (defaults to `❓` + "Questions before the round" in `client_language`) · `ticket_naming` (how synced feedback tickets are named) · `clickup_token_source` (REST token location for MCP rate-limit fallback) · `deploy` (how a push ships, e.g. "push main → auto-deploy"; without it, commit but ask before deploying) · `docs` (status/tasks files to update; defaults `docs/status.md` + `docs/tasks.md` if they exist)
-
-If the config section is missing or any **required** key is absent: **STOP immediately.** In this state make no ClickUp/MCP/DB calls of any kind — not to "verify", not to pre-fill the template. Do not infer any key (not the list, not `client_language`, not deploy behavior), and do not write the config into `CLAUDE.md` yourself; the values must come from the user. Print the config template (same one `/feedback-prep` prints), ask the user to fill it into the project's `CLAUDE.md`, and end the run.
-
 ## 1. Collect & consolidate
 
-- Fetch the configured ClickUp list and find all **standalone** feedback tickets in **to do** (exclude subtasks of previous round parents — check `parent`). The authoritative match is `feedback_table.ticket_id_column`: a standalone to-do task whose ID appears there is a feedback ticket, regardless of its name; use `ticket_naming` only as a secondary hint. Standalone to-do tickets with NO `feedback_table` row (created directly in ClickUp by the owner/team) are in scope too — consolidate them like any other; they simply have no DB row to read or sync.
-- Read each ticket's full markdown, its **ClickUp comments and their threaded replies** (`clickup_get_task_comments` + `clickup_get_threaded_comments` / REST `GET /task/{id}/comment` + `GET /comment/{comment_id}/reply` — the plain task-comment endpoint does NOT return thread replies, and /feedback-prep's answers live exactly there), AND its `feedback_table` row (the original title sometimes differs from the edited ClickUp name — all three carry intent). Comments often hold context, answers and Q&A added after filing — treat them as part of the ticket's requirements. Download and look at every screenshot (incl. ones attached in comments).
-- Also sweep tickets in **update required**: if the owner has answered the posted questions via comments, the ticket re-enters this round's scope (consolidate it like any other; the comment thread is the spec).
-- Create one parent ticket `🗂️ <"Customer feedback" in client_language> №N — DD.MM.YYYY (<"consolidated ticket" in client_language>)` (priority high, status in progress) listing the scope. Then **convert** each original feedback ticket into a subtask of it **in place** — REST `PUT /api/v2/task/{id}` with body `{"parent":"<parentId>"}` (promoting a top-level task to a subtask returns HTTP 200 and sticks). **Do NOT recreate + delete.** Conversion keeps the task's ID, description, screenshot URLs, comments/Q&A and history intact, so there is nothing to copy over and nothing dies with a deleted task. The MCP tools can't do this (`clickup_update_task` has no `parent` field; `clickup_move_task` only changes lists) — use the REST API.
-- Because conversion preserves the ID, `feedback_table.ticket_id_column` still points at the right task — **no re-pointing needed**, and any DB triggers keyed to it keep working. (Re-pointing is only required in the delete+recreate fallback — see §2 extraction.)
-- If the ClickUp MCP connector is rate-limited, go straight to the REST API using the token from `clickup_token_source`.
+- Fetch the project's ClickUp list (`clickup_list_id`) and find all **standalone** `REPORTED:` tickets in **to do** (exclude subtasks of previous round parents — check `parent`).
+- Read each ticket's full markdown; if `supabase` is configured, also read its bug-reports row (the original title sometimes differs from the edited ClickUp name — both carry intent). Download and look at every screenshot.
+- Create one parent ticket `Feedback N — DD.MM.YYYY` (priority high, status in progress). Its description is the scope table `# | Subtask | Area | Original` — one row per ticket: the subtask name, the page/module it touches, the original ticket id.
+- Recreate each original as a subtask under the parent. The subtask name is `<Reporter>: <summary>` where:
+  - `<Reporter>` is the person who reported it, exactly as the original ticket names them.
+  - `<summary>` is written by you in the config `language` after reading the ticket + screenshot: the page/module plus the concrete outcome to build, the way a developer would title the work — e.g. `Ники: /vehicles/:id — при смяна на гума да може да се избере резервната` — not the reporter's raw words (raw titles are often one vague word).
+  - Subtask body = full original markdown incl. screenshot URLs + a provenance line: original id, original title verbatim.
+- Then delete the originals.
+- If `supabase` is configured: immediately re-point the bug-reports table's `clickup_task_id` to the new subtask ids (otherwise status-comment DB triggers post into deleted tasks).
+- If the ClickUp MCP connector is rate-limited, go straight to the REST API with `integration_secrets.clickup_token` (see the project's `feedback-round-<slug>` memory for endpoints/workspace ids).
 
 ## 2. Scope & group
 
-- Investigate each ticket against the codebase and live DB before writing anything. Tickets can describe **stale or deleted code** (written from an older analysis) — scoping verifies every claimed mechanism against the current tree, and briefs state what actually exists; a "reawaken X" ticket whose X was deleted becomes a "rebuild X" brief.
-- **Reuse, don't re-derive:** on a same-day or same-week repeat round, start scoping from the freshest round's map (docs/status + the workflow memory notes) and point Explore agents ONLY at areas this round touches that the map doesn't cover. Re-deriving a full codebase map every round is the single most avoidable scoping cost.
+- Investigate each ticket against the codebase and live DB before writing anything.
 - Group tickets into **work packages by file overlap**, not one-agent-per-ticket blindly: tickets touching the same components become ONE package; truly independent tickets get their own package.
-- **Dependencies first:** before finalizing packages, extract inter-ticket dependencies from BOTH sources: (a) ClickUp dependencies (`GET /api/v2/task/{id}` returns a `dependencies` array; an entry where this task is `task_id` and links a `depends_on` id means "this waits on that") and (b) explicit markers in ticket descriptions ("AFTER package X", "TOGETHER with … / ONE agent", "LAST", "waits on" — in `client_language` or English). Tickets marked "TOGETHER / ONE agent" MUST be one package. Lift ticket→ticket edges to package→package edges (any ticket dependency = package dependency), then topologically sort packages into **waves**: a wave = all packages whose dependencies have already shipped. A cycle in the graph = stop and ask the owner. Tickets with no edges behave exactly as before.
 - Keep **DB migrations and data changes with the orchestrator** (main session) — agents don't apply migrations.
-- A ticket that requires answering questions (owner decision, genuine ambiguity): don't implement — extract it from the round instead. It must end up as a **top-level task** in the list, NOT a subtask of the round parent. **Prefer catching these during scoping, before consolidation — then just leave the ticket top-level (never set its parent), no conversion, no re-pointing.** If it was already converted to a subtask (questions surfaced mid-implementation), you can't simply convert it back: the ClickUp API **cannot demote a subtask to top-level** — `PUT parent:null` returns 200 but is a silent no-op. So fall back to the delete+recreate path there: recreate it as a new top-level task (full markdown + provenance line), delete the subtask, and re-point `feedback_table.ticket_id_column` to the new ID. Then set its status to **update required**, assign `ai_assignee`, post a comment with the concrete questions and options (in `client_language`), and keep its `feedback_table` row `open`. This applies whenever the questions surface — during scoping or mid-implementation.
+- A ticket that requires answering questions (owner decision, genuine ambiguity): don't implement — extract it from the round instead. It must end up as a **top-level task** in the list, NOT a subtask of the round parent: if it isn't consolidated yet, leave the original in place; if it already became a subtask, recreate it as a top-level task (keep its `<Reporter>: <summary>` name; full markdown + provenance line), delete the subtask copy, and re-point `clickup_task_id` to the new id (when `supabase` is configured). Then set its status to **update required** if the list has that status (check the list's configured statuses via get_list first; if not, leave it in **to do** and flag it in the comment), assign "Georgi AI" (member id 266686581), post a comment with the concrete questions and options, and keep its bug-reports row `open`. This applies whenever the questions surface — during scoping or mid-implementation.
 
 ## 3. Implement — subagent-driven, parallel
 
 - Mark the affected subtasks **in progress** as their package starts.
-- Dispatch **wave by wave along the dependency graph** (§2): within a wave — one background agent per package, all of the wave's packages in parallel (single message, multiple Agent calls). A package starts the moment **its own** dependencies are committed & green — don't wait for unrelated packages of the previous wave. With no dependencies at all this degrades to a single parallel wave.
-- **Isolation is per wave, not per round:** use worktrees only while another session is ACTIVELY working the same tree (or packages unavoidably overlap on files). Re-check at every wave boundary (`git status` clean + session list quiet): once the tree is yours, dispatch the next wave on the **shared tree** with hard per-agent file scopes and **pinned inter-package contracts** (exact export signatures quoted verbatim in every consuming brief; a consumer polls for the producer's files before its final verify). A shared-tree wave merges with zero patch/3-way overhead — worktrees kept past their reason are pure time loss.
-- **Migrations:** agents write draft migration files; the orchestrator applies them, in dependency order, directly via the migration tool. For a large or data-heavy SQL file (≳15KB, embedded seed literals) use a small single-purpose agent that reads the file and applies it (with md5-of-live-prosrc prechecks for any function transplant) — and spawn a **fresh** agent per apply, never resume the previous one: a reused applier's growing transcript makes each later apply slower than doing it yourself. Data migrations must carry hard asserts (expected row counts, 1:1 match checks) so a divergence aborts loudly instead of half-applying.
-- Each agent's brief must include: exact ticket texts (in `client_language`) **plus any comment/Q&A content that refines them**, the files/areas it may touch (hard scope), the project conventions (existing patterns, UI copy language, tests next to code), what to verify (the scoped `verify_commands`), and **no commits, no dev servers**.
-- **Per package, the moment its agent completes — don't wait for the other packages:** review its diff yourself → run its scoped tests (the `verify_commands` scope only) → commit that package immediately (subtask IDs in the message) → push per the `deploy` config → **immediately run §4 for that package's subtask(s)**. Never accumulate staged work across packages: a concurrent session's commit can otherwise swallow a batched diff.
-- **Verification cadence (don't over-verify):** scoped tests per package; **full typecheck once per wave** (not per package — a whole-project typecheck costs the same however small the package, and mid-wave it reports other agents' in-flight files as noise); the **full suite + typecheck once** over the combined state after the last package, as the final guard. Fix forward if a cross-package regression surfaces. (Type-only gaps between pushes are deploy-safe when the build step doesn't typecheck — check once per project, then stop worrying per package.)
+- Dispatch **one background agent per package, all in parallel** (single message, multiple Agent calls). Use worktree isolation only if packages unavoidably overlap on files.
+- Each agent's brief must include: exact ticket texts (original language), the files/areas it may touch (hard scope), the project conventions (existing patterns, UI copy language, tests next to code), what to verify (`npx vitest run <scope>`, `npm run typecheck`, `npm run lint` — or the project's equivalents), and **no commits, no dev servers**.
+- On each agent's completion: review its diff yourself before accepting.
+- After all packages land: run the **full** suite + typecheck once over the combined state, then commit **per ticket/package** with the subtask ids in the message, and push main (auto-deploy is pre-authorized).
 
-## 4. Track & sync — per subtask, the instant its package is committed (never batched)
+## 4. Track & sync (per subtask, as it completes — not batched at the end)
 
-Run this as the **last move of each package's §3 loop**, immediately after that package is committed & pushed. Do NOT collect the updates and apply them together at the end — each subtask flips the moment its own work ships:
-
-- ClickUp: that subtask's status → **complete** + an implementation comment in `client_language` (what/why/commit; call out anything the owner should review).
-- DB: `feedback_table.status` → `fixed` (synced tickets only — a direct ticket has no row); anything not shipped stays/returns to `open`.
+- ClickUp: status → **complete** + an implementation comment in the config `language` (what/why/commit; call out anything the owner should review).
+- If `supabase` is configured: bug-reports row status → `fixed`; anything not shipped stays/returns to `open`.
 
 ## 5. Wrap up
 
-- If `brd_location` is configured: append a dated change-log section (`## <"Changes" in client_language> — DD.MM.YYYY (<"customer feedback" in client_language> №N)`) to each affected BRD module page.
-- Close the parent with a round summary + an explicit "for owner review" list in `client_language`; link any tickets extracted to **update required** there (they live outside the parent, so the parent still closes cleanly once all remaining subtasks shipped).
-- Update the configured `docs` files (same format as previous rounds), commit, push.
-- Verify live in the browser (find the real dev-server port via `lsof` — this project may not be the only one running). If no logged-in session exists, say so and list what remains visually unverified — never enter credentials.
-- Update the project's feedback-workflow memory/notes if one is maintained (new parent ID, anything learned).
+- If `brd_doc_id` is configured: append a dated change-log section to each affected BRD module page (header in the config `language`, e.g. bg: `## Изменения — DD.MM.YYYY (Feedback №N)`).
+- Close the parent with a round summary + an explicit owner-review list (in the config `language`); link any tickets extracted to **update required** there (they live outside the parent, so the parent still closes cleanly once all remaining subtasks shipped).
+- Update `docs/status.md` + `docs/tasks.md` (same format as previous rounds), commit, push.
+- Verify live in the browser (find the real dev-server port — this project's may not be the only one running). If no logged-in session exists, say so and list what remains visually unverified — never enter credentials.
+- Update the per-project memory `feedback-round-<project-slug>.md` (new parent id, anything learned); create it from the shared feedback-round-workflow memory on first run if it doesn't exist.

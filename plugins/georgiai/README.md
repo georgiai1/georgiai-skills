@@ -5,7 +5,7 @@ Customer feedback rounds end-to-end, driven from ClickUp. Two commands:
 | Command | What it does | Side effects |
 |---|---|---|
 | `/feedback-prep` | Reads feedback tickets + BRD + code, posts clarifying questions as ClickUp comments | Comments + status flips only; no code |
-| `/feedback-round <N>` | Consolidates tickets, implements via parallel subagents in dependency waves, ships per package | Code, commits, deploy, ClickUp/DB/BRD sync |
+| `/feedback-round <N>` | Consolidates tickets under a round parent, implements via parallel subagents grouped by file overlap, ships per package | Code, commits, deploy, ClickUp/Supabase/BRD sync |
 
 The intended loop: `/feedback-prep` → owner answers in ClickUp comment threads → `/feedback-round N` picks up answered tickets automatically.
 
@@ -15,9 +15,23 @@ The intended loop: `/feedback-prep` → owner answers in ClickUp comment threads
 - A DB table that records filed feedback and links each row to its ClickUp task
 - Database access from Claude Code (e.g. the Supabase MCP) if you want DB sync
 
-## Per-project setup (required)
+## Per-project setup
 
-Add a `## Feedback workflow` section to the project's `CLAUDE.md` (or create `.claude/feedback-workflow.md`):
+**/feedback-round** reads `.claude/feedback-round.json` at the project root:
+
+```json
+{
+  "clickup_list_id": "…",
+  "project_name": "…",
+  "language": "bg",
+  "supabase": { "project_ref": "…", "bug_reports_table": "bug_reports" },
+  "brd_doc_id": "…"
+}
+```
+
+`clickup_list_id` and `project_name` are required; `language` defaults to `en`; `supabase` and `brd_doc_id` are optional. If the file is missing, the command matches the project against the ClickUp Projects space, confirms with you once, and writes the file itself.
+
+**/feedback-prep** reads a `## Feedback workflow` section in the project's `CLAUDE.md` (or `.claude/feedback-workflow.md`):
 
 ```markdown
 ## Feedback workflow
@@ -36,4 +50,4 @@ Add a `## Feedback workflow` section to the project's `CLAUDE.md` (or create `.c
 - docs: docs/status.md + docs/tasks.md                                       # optional
 ```
 
-Both commands hard-stop with this template if the section is missing — they never guess list IDs, table names, or deploy behavior.
+`/feedback-prep` hard-stops with this template if the section is missing — it never guesses list IDs, table names, or deploy behavior.

@@ -66,9 +66,9 @@ Do not modify anything else in my settings.
 Customer feedback rounds end-to-end, driven from ClickUp:
 
 - **/feedback-prep** — pre-round clarification pass: reads feedback tickets, comments, screenshots, the BRD and the code, then posts one-word-answerable clarifying questions as ClickUp comments and flips those tickets to *update required*. Changes nothing in the product.
-- **/feedback-round `<N>`** — runs round N: consolidates tickets under a parent, groups them into work packages by file overlap, resolves inter-ticket dependencies into waves, implements each package with parallel subagents, commits/ships per package, and syncs ClickUp statuses, the feedback DB table, the BRD change-log and project docs.
+- **/feedback-round `<N>`** — runs round N: consolidates tickets under a `Feedback N — DD.MM.YYYY` parent, groups them into work packages by file overlap, implements each package with parallel subagents, commits per ticket/package, deploys, and syncs ClickUp statuses, the feedback DB table (Supabase), the BRD change-log and project docs.
 
-**Per-project setup (required):** both commands read a `## Feedback workflow` config section from the project's `CLAUDE.md` and stop with a template if it's missing. See [plugins/georgiai/README.md](plugins/georgiai/README.md).
+**Per-project setup:** `/feedback-round` reads `.claude/feedback-round.json` from the project root (and offers to create it by matching the project against the ClickUp Projects space on first run); `/feedback-prep` reads a `## Feedback workflow` config section from the project's `CLAUDE.md` and stops with a template if it's missing. See [plugins/georgiai/README.md](plugins/georgiai/README.md).
 
 ### Skill — brd-architect
 
