@@ -41,7 +41,8 @@ Set up the GeorgiAI Claude Code plugin for me:
 
 3. Run: claude plugin install georgiai@georgiai
    This one plugin contains everything: /feedback-prep, /feedback-round,
-   and the brd-architect, nuxt, and fix-stale-mcp-oauth skills.
+   and the brd-architect, spec-gap-interview, nuxt, and
+   fix-stale-mcp-oauth skills.
 
 4. Enable auto-update: in ~/.claude/settings.json, set "autoUpdate": true
    on the "georgiai" entry under "extraKnownMarketplaces" (edit the JSON
@@ -73,6 +74,10 @@ Customer feedback rounds end-to-end, driven from ClickUp:
 ### Skill — brd-architect
 
 One-Shot BRD Architect: interviews a business owner about how their business actually runs and produces a single, build-ready BRD complete enough for a coding agent to build the whole system in one shot — no follow-up questions, no invented decisions, no gaps. Triggers on requests to write/review/improve a BRD, spec, or requirements document.
+
+### Skill — spec-gap-interview
+
+Interviews you about an existing draft functional spec instead of rewriting it: batches of 40 closed A/B/C/D/E questions, numbered globally and grouped by section with the triggering phrase quoted, covering edge cases, state transitions, permissions, errors, data rules, concurrency, internal contradictions and undefined terms — until every missing decision is extracted.
 
 ### Skill — nuxt
 
