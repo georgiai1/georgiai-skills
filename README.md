@@ -41,8 +41,8 @@ Set up the GeorgiAI Claude Code plugin for me:
 
 3. Run: claude plugin install georgiai@georgiai
    This one plugin contains everything: /feedback-prep, /feedback-round,
-   and the brd-architect, spec-gap-interview, nuxt, and
-   fix-stale-mcp-oauth skills.
+   and the brd-architect, spec-gap-interview, nuxt, fix-stale-mcp-oauth,
+   and optimizing-pagespeed skills.
 
 4. Enable auto-update: in ~/.claude/settings.json, set "autoUpdate": true
    on the "georgiai" entry under "extraKnownMarketplaces" (edit the JSON
@@ -86,6 +86,10 @@ Nuxt 4+ development skill with reference docs (server routes, file-based routing
 ### Skill — fix-stale-mcp-oauth
 
 Repairs MCP OAuth logins that fail on every attempt with `Unrecognized client_id` / `invalid_client` (the `/mcp` → Authenticate loop). Root cause: a stale cached Dynamic Client Registration in `~/.claude/.credentials.json` that the auth server no longer recognizes — the UI can't clear it and reinstalling the server doesn't help. The skill removes just that one cache entry (metadata-only inspection, backup, atomic write), then walks through the full-restart re-authentication.
+
+### Skill — optimizing-pagespeed
+
+Raising PageSpeed Insights / Lighthouse scores and fixing slow or CPU-hungry pages, with a focus on Nuxt/Vue/Vercel. It covers how Lantern actually scores (anything requested before the observed paint is charged; Speed Index is estimated from layout events; the headless first-frame stall behind 85↔99 swings), a symptom → cause → fix catalog, an idle-CPU diagnosis recipe, and the traps that broke production. Ships with trace analyzers (`scripts/trace-stats.cjs`, `scripts/idle-cpu.cjs`) and proven Nuxt recipes (critical CSS, post-paint hydration, lazy auth client, fallback fonts).
 
 ## Contributing / updating
 
