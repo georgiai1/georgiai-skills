@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {click,timeline,RATE} from '../scripts/audio.mjs';
+import {validateConfig,clickTimes,totalFrames} from '../scripts/config.mjs';
+import {atoms} from '../scripts/media.mjs';
+const example=()=>JSON.parse(readFileSync(new URL('../demo.json',import.meta.url),'utf8'));
+test('45 second example maps local presses to global seconds',()=>{const c=validateConfig(example());assert.equal(totalFrames(c),1350);assert.deepEqual(clickTimes(c),[2.5,5.8,11.3]);});
+test('double tap has a silent gap and a second onset at 62ms',()=>{const a=click();assert(a.slice(10,1000).some(v=>Math.abs(v)>.1));assert(a.slice(2161,2976).every(v=>v===0));assert(a.slice(2977,3100).some(v=>Math.abs(v)>.05));assert(Math.max(...a.map(Math.abs))<.37);});
+test('each click style is deterministic and bounded',()=>{for(const style of ['mechanical','soft','digital','double']){assert.deepEqual(click(style),click(style));assert(Math.max(...click(style).map(Math.abs))<=.361);}});
+test('sound timeline uses frame-derived position including a press at zero',()=>{const samples=timeline(2,[0,1],'double',.35);assert(samples.slice(1,100).some(v=>v!==0));assert(samples.slice(RATE-100,RATE).every(v=>v===0));assert(samples.slice(RATE+1,RATE+100).some(v=>v!==0));});
+test('reject invalid media paths, focus, press time, missing disclosure and numeric audio',()=>{for(const mutate of [c=>c.scenes[1].file='../private.mp4',c=>c.scenes[1].file='C:\\private.mp4',c=>c.scenes[1].focus.x=-1,c=>c.scenes[1].pressFrame=164,c=>c.waitingLabel='',c=>c.audio.clickGain=NaN]){const c=example();mutate(c);assert.throws(()=>validateConfig(c));}});
+test('MP4 atom parser rejects truncated and oversized atoms',()=>{assert.throws(()=>atoms(Buffer.from([0,0])));const b=Buffer.alloc(8);b.writeUInt32BE(100);b.write('moov',4);assert.throws(()=>atoms(b));});
