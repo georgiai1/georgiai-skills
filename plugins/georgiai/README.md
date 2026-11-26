@@ -1,4 +1,12 @@
-# georgiai plugin — feedback workflow setup
+# georgiai plugin — setup
+
+Install through the marketplace with `/plugin install georgiai --marketplace georgiai1/georgiai-skills`.
+
+## Software demo video
+
+Use `/georgiai:software-demo-video` for real software recordings with branded Remotion graphics and frame-synced sound. See [installation and licenses](skills/software-demo-video/references/installation.md), [project commands](skills/software-demo-video/references/template.md), and [verification](skills/software-demo-video/references/verification.md). The skill ships only reusable source and synthetic test generators; no customer media is included.
+
+## Feedback workflow setup
 
 Customer feedback rounds end-to-end, driven from ClickUp. Two commands:
 

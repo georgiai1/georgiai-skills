@@ -42,7 +42,7 @@ Set up the GeorgiAI Claude Code plugin for me:
 3. Run: claude plugin install georgiai@georgiai
    This one plugin contains everything: /feedback-prep, /feedback-round,
    and the brd-architect, spec-gap-interview, nuxt, fix-stale-mcp-oauth,
-   and optimizing-pagespeed skills.
+   optimizing-pagespeed, and software-demo-video skills.
 
 4. Enable auto-update: in ~/.claude/settings.json, set "autoUpdate": true
    on the "georgiai" entry under "extraKnownMarketplaces" (edit the JSON
@@ -90,6 +90,10 @@ Repairs MCP OAuth logins that fail on every attempt with `Unrecognized client_id
 ### Skill — optimizing-pagespeed
 
 Raising PageSpeed Insights / Lighthouse scores and fixing slow or CPU-hungry pages, with a focus on Nuxt/Vue/Vercel. It covers how Lantern actually scores (anything requested before the observed paint is charged; Speed Index is estimated from layout events; the headless first-frame stall behind 85↔99 swings), a symptom → cause → fix catalog, an idle-CPU diagnosis recipe, and the traps that broke production. Ships with trace analyzers (`scripts/trace-stats.cjs`, `scripts/idle-cpu.cjs`) and proven Nuxt recipes (critical CSS, post-paint hydration, lazy auth client, fallback fonts).
+
+### Skill — software-demo-video
+
+Create faithful, branded software walkthroughs from real recordings: frame-synced shortcut animations, captions, smooth window zooms, locally synthesized double clicks and optional user-provided music. Includes a configurable Remotion + React project, FFmpeg helpers, synthetic smoke tests and audio-only replacement with compressed-video preservation. Invoke `/georgiai:software-demo-video`; see [setup, installation and licenses](plugins/georgiai/skills/software-demo-video/references/installation.md). Desktop capture depends on the tools available in your environment.
 
 ## Contributing / updating
 

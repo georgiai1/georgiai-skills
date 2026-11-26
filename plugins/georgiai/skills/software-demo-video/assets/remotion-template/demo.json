@@ -1,0 +1,19 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "brand": {"name": "Example Software", "accent": "#176bda", "background": "#f4f6fa", "ink": "#182033", "fontFamily": "Arial, sans-serif"},
+  "waitingLabel": "Изчакването е съкратено",
+  "syntheticLabel": "SYNTHETIC TEST — NOT A PRODUCT RECORDING",
+  "audio": {"clickStyle": "double", "clickGain": 0.35, "musicGainDb": -24, "duckDepth": 0.55, "fadeSeconds": 0.6},
+  "scenes": [
+    {"id": "intro", "kind": "card", "frames": 120, "title": "Нужният екран. Само два клавиша.", "caption": "Кратка демонстрация на работния процес", "keys": "Alt+D", "pressFrame": 75},
+    {"id": "one", "kind": "screen", "frames": 165, "title": "Първа операция", "caption": "Заменете с наблюдаваното действие", "keys": "Alt+D", "pressFrame": 54, "file": "clips/one.mp4", "sourceWidth": 1920, "sourceHeight": 1080, "zoomStartFrame": 85, "zoomEndFrame": 125, "focus": {"x": 320, "y": 180, "width": 1280, "height": 720}},
+    {"id": "two", "kind": "screen", "frames": 165, "title": "Втора операция", "keys": "Alt+S", "pressFrame": 54, "file": "clips/two.mp4", "sourceWidth": 1920, "sourceHeight": 1080, "loadingCut": true},
+    {"id": "three", "kind": "screen", "frames": 165, "title": "Трета операция", "file": "clips/three.mp4", "sourceWidth": 1920, "sourceHeight": 1080},
+    {"id": "four", "kind": "screen", "frames": 165, "title": "Четвърта операция", "file": "clips/four.mp4", "sourceWidth": 1920, "sourceHeight": 1080},
+    {"id": "five", "kind": "screen", "frames": 165, "title": "Пета операция", "file": "clips/five.mp4", "sourceWidth": 1920, "sourceHeight": 1080},
+    {"id": "reference", "kind": "card", "frames": 225, "title": "Справочник", "caption": "Добавете само проверените клавишни комбинации."},
+    {"id": "close", "kind": "card", "frames": 180, "title": "Продължете работа", "caption": "example.invalid"}
+  ]
+}
